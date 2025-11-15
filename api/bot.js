@@ -46,7 +46,7 @@ async function saveAuth() {
   }
 }
 // ---------- 发送到指定群的通用函数 (隔离) - 修改：直接用Buffer发送，不保存文件 ----------
-async function sendToChat(chatId, photoBuffer, caption, lat, lng, filename) {
+async function sendToChat(bot, chatId, photoBuffer, caption, lat, lng, filename) {  // 添加 bot 参数
   try {
     await bot.telegram.sendPhoto(chatId, photoBuffer, {
       filename: filename || 'photo.jpg',
@@ -67,7 +67,7 @@ async function sendToChat(chatId, photoBuffer, caption, lat, lng, filename) {
   }
 }
 // ---------- 检查用户是否管理员 ----------
-async function isAdmin(chatId, userId) {
+async function isAdmin(bot, chatId, userId) {  // 添加 bot 参数
   try {
     const member = await bot.telegram.getChatMember(chatId, userId);
     return member.status === 'administrator' || member.status === 'creator';
@@ -126,7 +126,7 @@ bot.command('bz', (ctx) => {
 bot.command('lj', async (ctx) => {
   const chatId = ctx.chat.id;
   if (!GROUP_CHAT_IDS.includes(chatId)) return;
-  const isUserAdmin = await isAdmin(chatId, ctx.from.id);
+  const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
       const noPermMsg = await ctx.reply('❌ 🔒 无权限！ /lj 只限汇盈国际负责人使用。');
@@ -158,7 +158,7 @@ bot.command('lj', async (ctx) => {
 bot.command('qc', async (ctx) => {
   const chatId = ctx.chat.id;
   if (!GROUP_CHAT_IDS.includes(chatId)) return;
-  const isUserAdmin = await isAdmin(chatId, ctx.from.id);
+  const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
       const noPermMsg = await ctx.reply('❌ 🔒 无权限！ /qc 只限汇盈国际负责人使用。');
@@ -207,7 +207,7 @@ bot.command('qc', async (ctx) => {
 bot.command('lh', async (ctx) => {
   const chatId = ctx.chat.id;
   if (!GROUP_CHAT_IDS.includes(chatId)) return;
-  const isUserAdmin = await isAdmin(chatId, ctx.from.id);
+  const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
       const noPermMsg = await ctx.reply('❌ 🔒 无权限！ /lh 只限汇盈国际负责人使用。');
@@ -253,7 +253,7 @@ bot.command('lh', async (ctx) => {
 bot.command('boss', async (ctx) => {
   const chatId = ctx.chat.id;
   if (!GROUP_CHAT_IDS.includes(chatId)) return;
-  const isUserAdmin = await isAdmin(chatId, ctx.from.id);
+  const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
       const noPermMsg = await ctx.reply('❌ 🔒 无权限！ /boss 只限汇盈国际负责人使用。');
@@ -314,7 +314,7 @@ bot.command('boss', async (ctx) => {
 bot.command('lg', async (ctx) => {
   const chatId = ctx.chat.id;
   if (!GROUP_CHAT_IDS.includes(chatId)) return;
-  const isUserAdmin = await isAdmin(chatId, ctx.from.id);
+  const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
       const noPermMsg = await ctx.reply('❌ 🔒 无权限！ /lg 只限汇盈国际负责人使用。');
@@ -377,7 +377,7 @@ bot.command('hc', async (ctx) => {
   if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const userId = ctx.from.id;
   const isAuthorized = authorizedUsers.get(userId) || false;
-  const isAdminUser = await isAdmin(chatId, userId);
+  const isAdminUser = await isAdmin(bot, chatId, userId);
   if (!isAuthorized && !isAdminUser) {
     try {
       const noPermMsg = await ctx.reply('❌ 🔒 无权限！ 你需授权才能使用 /hc 请联系汇盈国际负责人。');
@@ -446,7 +446,7 @@ bot.on('text', async (ctx) => {
   if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const userId = ctx.from.id;
   const isAuthorized = authorizedUsers.get(userId) || false;
-  const isAdminUser = await isAdmin(chatId, userId);
+  const isAdminUser = await isAdmin(bot, chatId, userId);
   if (!isAdminUser && !isAuthorized) {
     // 未授权: 删 + 警告 + 禁言(发言警告也美化 + 存 map)
     try {
@@ -510,7 +510,7 @@ bot.on('web_app_data', async (ctx) => {
   if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const userId = ctx.from.id;
   const isAuthorized = authorizedUsers.get(userId) || false;
-  const isAdminUser = await isAdmin(chatId, userId);
+  const isAdminUser = await isAdmin(bot, chatId, userId);
   if (!isAuthorized && !isAdminUser) {
     ctx.reply('❌ 🔒 无权限！ 你需授权才能使用拍照功能。请联系汇盈负责人。');
     return;
@@ -545,11 +545,11 @@ bot.on('web_app_data', async (ctx) => {
       }
     }
     // 直接发送Buffer，无保存
-    await sendToChat(chatId, photoBuffer1, caption + '\n(后置视角)', location.lat, location.lng, 'back.jpg');
-    await sendToChat(chatId, photoBuffer2, caption + '\n(前置自拍)', location.lat, location.lng, 'front.jpg');
+    await sendToChat(bot, chatId, photoBuffer1, caption + '\n(后置视角)', location.lat, location.lng, 'back.jpg');
+    await sendToChat(bot, chatId, photoBuffer2, caption + '\n(前置自拍)', location.lat, location.lng, 'front.jpg');
     const backupCaption = `🔄 **备份 - 来自群 ${GROUP_CHAT_IDS.indexOf(chatId) + 1}**：\n\n` + caption;
-    await sendToChat(BACKUP_GROUP_ID, photoBuffer1, backupCaption + '\n(后置视角)', location.lat, location.lng, 'back.jpg');
-    await sendToChat(BACKUP_GROUP_ID, photoBuffer2, backupCaption + '\n(前置自拍)', location.lat, location.lng, 'front.jpg');
+    await sendToChat(bot, BACKUP_GROUP_ID, photoBuffer1, backupCaption + '\n(后置视角)', location.lat, location.lng, 'back.jpg');
+    await sendToChat(bot, BACKUP_GROUP_ID, photoBuffer2, backupCaption + '\n(前置自拍)', location.lat, location.lng, 'front.jpg');
     ctx.reply(`🎉 **✨ 拍照已确认！** ${confirm} 已精准推送至**当前群(双视角 + 超精准位置)。🚀 💎`);
     // 无需unlink，因为无文件
   } catch (error) {
