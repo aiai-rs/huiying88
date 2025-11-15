@@ -1,7 +1,12 @@
 const { Telegraf } = require('telegraf');
-const fs = require('fs').promises;
+const fs = require('fs').promises; // 异步文件操作（Vercel 兼容）
 const path = require('path');
 // ---------- 配置 ----------
+const BOT_TOKEN = process.env.BOT_TOKEN;
+if (!BOT_TOKEN) {
+  console.error('❌ BOT_TOKEN 未配置！请在 Vercel 环境变量中添加。');
+  process.exit(1);
+}
 const GROUP_CHAT_IDS = [
   -1003354803364, // Group 1: 替换为你的第一个群 ID
   -1003381368112, // Group 2: 替换为你的第二个群 ID
