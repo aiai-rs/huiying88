@@ -113,10 +113,8 @@ bot.on('message', async (ctx) => {
 bot.command('bz', (ctx) => {
   console.log(`🔍 收到 /bz 命令！Chat ID: ${ctx.chat.id}, User ID: ${ctx.from.id}`);  // 新增：命令触发日志
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) {
-    console.log(`🚫 /bz 忽略：Chat ID ${chatId} 不在 GROUP_CHAT_IDS (数组: [${GROUP_CHAT_IDS.join(', ')}])`);  // 新增：ID 不匹配日志
-    return;
-  }
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) { console.log(`🚫 /bz 忽略：Chat ID ${chatId} 不在 GROUP_CHAT_IDS (数组: [${GROUP_CHAT_IDS.join(', ')}])`); return; }  // 临时移除过滤
+  console.log(`✅ 过滤通过！Chat ID ${chatId} (测试模式 - 响应所有群)`);  // 新增：过滤日志
   const helpText = `📋 汇盈国际机器人指令面板\n\n` +
     `🔹 /hc - 🚗 换车安全确认拍照 (授权用户专用)\n` +
     `🔹 /boss - 👑 Boss 要求指定用户拍照 (汇盈国际负责人专用)\n` +
@@ -133,10 +131,10 @@ bot.command('bz', (ctx) => {
     console.error('❌ /bz 回复失败:', error);  // 新增：回复错误日志
   }
 });
-// ---------- /lj 指令: 生成群组邀请链接 (管理员可用) - 优化: 添加 inline button 直接点击加入（无需复制） ----------
+// ... (所有其他命令、on('text')、on('new_chat_members')、on('web_app_data') 完全不变，复制你的原代码从 /lj 到结束)
 bot.command('lj', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
@@ -165,10 +163,9 @@ bot.command('lj', async (ctx) => {
     console.error('❌ Invite link generation failed:', error);
   }
 });
-// ---------- /qc 指令 - 修改：分页删除，每批100条，延迟50ms防限流 ----------
 bot.command('qc', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
@@ -214,10 +211,9 @@ bot.command('qc', async (ctx) => {
   }
   ctx.reply(`🗑️ ✨ 清档完成！ 删除了 ${deletedCount} 条记录 历史已清空！`);
 });
-// ---------- /lh 指令 - 加 Emoji ----------
 bot.command('lh', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
@@ -260,10 +256,9 @@ bot.command('lh', async (ctx) => {
     console.error('❌ Ban user failed:', error);
   }
 });
-// ---------- /boss 指令 - 加 Emoji + 修复: @username 时获取 userId ----------
 bot.command('boss', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
@@ -321,10 +316,9 @@ bot.command('boss', async (ctx) => {
     console.error('❌ /boss command failed:', error);
   }
 });
-// ---------- /lg 指令 - 加 Emoji + 修复: @username 时获取 userId ----------
 bot.command('lg', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const isUserAdmin = await isAdmin(bot, chatId, ctx.from.id);
   if (!isUserAdmin) {
     try {
@@ -382,10 +376,9 @@ bot.command('lg', async (ctx) => {
     console.error('❌ /lg command failed:', error);
   }
 });
-// ---------- /hc 指令 - 加 Emoji + 无权限记录 ----------
 bot.command('hc', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const userId = ctx.from.id;
   const isAuthorized = authorizedUsers.get(userId) || false;
   const isAdminUser = await isAdmin(bot, chatId, userId);
@@ -410,7 +403,7 @@ bot.command('hc', async (ctx) => {
 // ---------- 新成员进群: 警告文本美化 + 加 Emoji ----------
 bot.on('new_chat_members', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   if (ctx.message.new_chat_members.some(member => member.is_bot)) return;
   const newMembers = ctx.message.new_chat_members.filter(member => !member.is_bot);
   for (const member of newMembers) {
@@ -454,7 +447,7 @@ bot.on('new_chat_members', async (ctx) => {
 // ---------- 文本消息处理: 阻挡 + 授权(加 Emoji 到授权回复) - 扩展授权无权限消息 ----------
 bot.on('text', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const userId = ctx.from.id;
   const isAuthorized = authorizedUsers.get(userId) || false;
   const isAdminUser = await isAdmin(bot, chatId, userId);
@@ -518,7 +511,7 @@ bot.on('text', async (ctx) => {
 // ---------- Web App 数据处理 - 修改：直接用Buffer发送，无文件保存 + 校验 ----------
 bot.on('web_app_data', async (ctx) => {
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  // 临时注释：if (!GROUP_CHAT_IDS.includes(chatId)) return;
   const userId = ctx.from.id;
   const isAuthorized = authorizedUsers.get(userId) || false;
   const isAdminUser = await isAdmin(bot, chatId, userId);
