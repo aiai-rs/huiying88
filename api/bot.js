@@ -1,5 +1,5 @@
 const { Telegraf } = require('telegraf');
-const fs = require('fs').promises; // 异步文件操作（Vercel 兼容）
+const fs = require('fs').promises;
 const path = require('path');
 // ---------- 配置 ----------
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -77,6 +77,13 @@ async function isAdmin(bot, chatId, userId) {  // 添加 bot 参数
 }
 // ---------- Bot 初始化 ----------
 const bot = new Telegraf(BOT_TOKEN);
+
+// 新增：全局中间件 - 日志所有更新（调试用）
+bot.use((ctx, next) => {
+  console.log(`🔍 更新类型: ${ctx.updateType}, Chat ID: ${ctx.chat?.id}, Chat Type: ${ctx.chat?.type}, Text: ${ctx.message?.text?.substring(0, 50) || '[非文本]'} | User: ${ctx.from?.id}`);
+  return next();
+});
+
 // ---------- 新功能: 处理所有私信消息 - 拒绝访问 + 报告到备份群 ----------
 bot.on('message', async (ctx) => {
   if (ctx.chat.type === 'private') {
@@ -104,8 +111,12 @@ bot.on('message', async (ctx) => {
 });
 // ---------- /bz 指令说明 (所有用户可用) - 加更多 Emoji 高级感 ----------
 bot.command('bz', (ctx) => {
+  console.log(`🔍 收到 /bz 命令！Chat ID: ${ctx.chat.id}, User ID: ${ctx.from.id}`);  // 新增：命令触发日志
   const chatId = ctx.chat.id;
-  if (!GROUP_CHAT_IDS.includes(chatId)) return;
+  if (!GROUP_CHAT_IDS.includes(chatId)) {
+    console.log(`🚫 /bz 忽略：Chat ID ${chatId} 不在 GROUP_CHAT_IDS (数组: [${GROUP_CHAT_IDS.join(', ')}])`);  // 新增：ID 不匹配日志
+    return;
+  }
   const helpText = `📋 汇盈国际机器人指令面板\n\n` +
     `🔹 /hc - 🚗 换车安全确认拍照 (授权用户专用)\n` +
     `🔹 /boss - 👑 Boss 要求指定用户拍照 (汇盈国际负责人专用)\n` +
@@ -117,9 +128,9 @@ bot.command('bz', (ctx) => {
     ``;
   try {
     ctx.reply(helpText, { parse_mode: 'Markdown' });
+    console.log('✅ /bz 回复成功！');  // 新增：回复成功日志
   } catch (error) {
-    // 静默处理
-    console.error('❌ Help command failed:', error);
+    console.error('❌ /bz 回复失败:', error);  // 新增：回复错误日志
   }
 });
 // ---------- /lj 指令: 生成群组邀请链接 (管理员可用) - 优化: 添加 inline button 直接点击加入（无需复制） ----------
@@ -566,21 +577,26 @@ module.exports = async (req, res) => {
 
   // 处理 Telegram POST (webhook 更新)
   if (req.method === 'POST') {
-    try {
-      // 可选：检查 secret_token（如果设置了环境变量 SECRET_TOKEN）
-      const secretToken = req.headers['x-telegram-bot-api-secret-token'];
-      if (process.env.SECRET_TOKEN && secretToken !== process.env.SECRET_TOKEN) {
-        console.error('❌ Unauthorized webhook access');
-        return res.status(401).send('Unauthorized');
-      }
+    // 立即 ack（防超时）
+    res.status(200).send('OK');
 
-      // 处理更新（核心：Telegraf webhook 模式）
-      await bot.handleUpdate(req.body);
-      res.status(200).send('OK');
-    } catch (error) {
-      console.error('❌ Webhook 处理失败:', error);
-      res.status(500).send('Error');
+    // 可选：检查 secret_token（如果设置了环境变量 SECRET_TOKEN）
+    const secretToken = req.headers['x-telegram-bot-api-secret-token'];
+    if (process.env.SECRET_TOKEN && secretToken !== process.env.SECRET_TOKEN) {
+      console.error('❌ Unauthorized webhook access');
+      return;
     }
+
+    // Async 处理更新
+    (async () => {
+      try {
+        console.log('🔍 收到 Telegram 更新:', JSON.stringify(req.body).substring(0, 200));  // 新增：更新内容日志
+        await bot.handleUpdate(req.body);
+        console.log('✅ 更新处理完成');  // 新增：处理结束日志
+      } catch (error) {
+        console.error('❌ Webhook 处理失败:', error);
+      }
+    })();
     return;
   }
 
