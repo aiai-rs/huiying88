@@ -45,7 +45,15 @@ async function saveAuth() {
     console.error('❌ 保存授权失败:', error);
   }
 }
-await loadAuth(); // 启动时加载
+// ---------- 初始化（用 async IIFE 包裹，修复 top-level await 错误） ----------
+(async () => {
+  try {
+    await loadAuth(); // 现在安全运行在 async 里
+    console.log('✅ Bot 初始化完成');
+  } catch (error) {
+    console.error('❌ 初始化失败:', error);
+  }
+})();
 // ---------- 发送到指定群的通用函数 (隔离) - 修改：直接用Buffer发送，不保存文件 ----------
 async function sendToChat(chatId, photoBuffer, caption, lat, lng, filename) {
   try {
@@ -420,7 +428,6 @@ bot.on('new_chat_members', async (ctx) => {
       const warningMsg = await ctx.reply(`🚫 这是汇盈国际官方对接群 \n\n` +
         `👤 **欢迎 ${userName} ${userUsername}！** ✨\n\n` +
         `⚠️ **重要提醒**：这是汇盈国际官方对接群，你还没有获得授权权限，请立即联系负责人进行授权！\n\n` +
-    
         `🔗 **联系方式**：请联系汇盈国际负责人或等待通知。\n\n` +
         `🚀 **汇盈国际 - 专业、安全、可靠** 💎`, { parse_mode: 'Markdown' });
       warningMessages.set(warningMsg.message_id, { userId, userName }); // 优化: 存对象
@@ -566,8 +573,12 @@ module.exports = async (req, res) => {
     // Vercel Webhook 设置（自动从环境变量获取 URL）
     const webhookUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}/api/bot` : undefined;
     if (webhookUrl) {
-      await bot.telegram.setWebhook(webhookUrl);
-      console.log(`🔗 Webhook 已设置: ${webhookUrl}`);
+      try {
+        await bot.telegram.setWebhook(webhookUrl);
+        console.log(`🔗 Webhook 已设置: ${webhookUrl}`);
+      } catch (err) {
+        console.error('❌ Webhook 设置失败:', err);
+      }
     }
     launchPromise = bot.launch()
       .then(() => {
@@ -575,7 +586,7 @@ module.exports = async (req, res) => {
       })
       .catch(err => {
         console.error('❌ Bot 启动失败:', err);
-        process.exit(1);
+        // 别 process.exit，在 serverless 里会重启
       });
   }
   // 响应 Vercel Cron/健康检查（保持活跃）
