@@ -1,7 +1,8 @@
 {
   "functions": {
-    "api/bot.js": {
-      "maxDuration": 30  
-    }
-  }
+    "api/bot.js": { "maxDuration": 30 }
+  },
+  "routes": [
+    { "src": "/api/bot", "dest": "/api/bot.js" }
+  ]
 }
