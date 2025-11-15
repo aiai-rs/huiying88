@@ -1,8 +1,8 @@
 {
-  "functions": {
-    "api/bot.js": { "maxDuration": 30 }
-  },
-  "routes": [
-    { "src": "/api/bot", "dest": "/api/bot.js" }
+  "crons": [
+    {
+      "path": "/api/bot",
+      "schedule": "*/5 * * * *"
+    }
   ]
 }
